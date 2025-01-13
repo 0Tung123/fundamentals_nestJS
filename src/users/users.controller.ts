@@ -12,14 +12,27 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserSignUpDto } from './dto/user-signup.dto';
 import { UserEntity } from './entities/user.entity';
+import { UserSignInDto } from './dto/user-signin.dto';
+import { CurrentUser } from 'src/utility/decorator/current-user.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('signup')
-  async signup(@Body() userSignUp: UserSignUpDto): Promise<{ user: UserEntity }> {
+  async signup(
+    @Body() userSignUp: UserSignUpDto,
+  ): Promise<{ user: UserEntity }> {
     return { user: await this.usersService.signup(userSignUp) };
+  }
+
+  @Post('signin')
+  async signin(
+    @Body() userSignIn: UserSignInDto,
+  ): Promise<{ accessToken: string; user: UserEntity }> {
+    const user = await this.usersService.signin(userSignIn);
+    const accessToken = await this.usersService.accessToken(user);
+    return { accessToken, user };
   }
 
   @Post()
@@ -28,19 +41,24 @@ export class UsersController {
     return 'hi';
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @Get('all')
+  async findAll(): Promise<UserEntity[]> {
+    return await this.usersService.findAll();
+  }
+
+  @Get('getProfile')
+  getProfile(@CurrentUser() currentUser: UserEntity) {
+    return currentUser;
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  async findOne(@Param('id') id: string): Promise<UserEntity> {
+    return await this.usersService.findOne(+id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return await this.usersService.update(+id, updateUserDto);
   }
 
   @Delete(':id')
